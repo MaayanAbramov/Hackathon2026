@@ -169,3 +169,7 @@ class DB_API:
         except Exception as e:
             print(f"Database insertion failed: {e} ")
             return None
+        
+if __name__ == "__main__":
+    print("Hola señor")
+    printf("hola")
