@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+db_string = os.getenv("DATABASE_URL")
 from pymongo import MongoClient
 
 class PatientInfo:
@@ -79,7 +83,7 @@ class DB_API:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls.client = MongoClient('mongodb+srv://doctor:doctor123@hackathonpoc.xwuwdov.mongodb.net/')
+            cls.client = MongoClient(db_string)
             cls.db = cls.client['Hackathon']
             cls.collection = cls.db['HackathonData']
         return cls._instance
@@ -163,5 +167,5 @@ class DB_API:
             return PatientInfo(patientNumber=patientNumber, location=location)
 
         except Exception as e:
-            print(f"Database insertion failed: {e}")
+            print(f"Database insertion failed: {e} ")
             return None
