@@ -13,12 +13,12 @@
 
 **2. Create and activate a virtual environment:**
 
-* **Linux / Mac:**
+ **Linux / Mac:**
 
     python3 -m venv venv
     source venv/bin/activate
 
-* **Windows (Git Bash / CMD):**
+ **Windows (Git Bash / CMD):**
 
     python -m venv venv
     venv\Scripts\activate
