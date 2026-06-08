@@ -6,3 +6,9 @@ repos:
         name: DevSecOps Syntax Check
         stages: [pre-push]
         args: [--count, "--select=E9,F63,F7,F82", --show-source, --statistics]
+      - id: run-pytest
+        name: Run Pytest before Push
+        entry: python -m pytest
+        language: system
+        pass_filenames: false
+        stages: [ pre-push ]
