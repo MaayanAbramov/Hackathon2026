@@ -171,4 +171,4 @@ class DB_API:
             return None
         
 if __name__ == "__main__":
-    printf("Hola señor") 
+    print("Hola señor") 
