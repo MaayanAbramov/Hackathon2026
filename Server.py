@@ -172,4 +172,3 @@ class DB_API:
         
 if __name__ == "__main__":
     print("Hola señor")
-    printf("hola")
