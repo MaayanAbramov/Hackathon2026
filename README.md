@@ -9,7 +9,7 @@
 
 **1. Clone the repository:**
 ```bash
-git clone [https://github.com/MaayanAbramov/Hackathon2026.git](https://github.com/MaayanAbramov/Hackathon2026.git)
+git clone https://github.com/MaayanAbramov/Hackathon2026.git
 cd Hackathon2026
 
 ```
