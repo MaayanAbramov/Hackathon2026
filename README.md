@@ -40,4 +40,4 @@ Create a `.env` file in the root directory and add the database connection strin
 
 Make sure your virtual environment is active, then run:
 
-    python Server.py
+    python3 src.Server
