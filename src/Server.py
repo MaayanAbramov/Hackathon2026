@@ -8,7 +8,7 @@ from src.constants import (
     FIELD_TO_PERMITTED_TYPE, 
     RAMBAM_DEPARTMENTS_LIST, 
     DB_NAME, 
-    COLLECTION_NAME
+    COLLECTION_NAME 
 )
 
 load_dotenv()  # Load environment variables from .env file
