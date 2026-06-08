@@ -1,8 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
-
 # Assuming your main script is named db_api.py
-from db_api import DB_API, PatientInfo
+from src.Server import DB_API, PatientInfo
 
 @pytest.fixture(autouse=True)
 def mock_mongo_client():
@@ -10,7 +9,7 @@ def mock_mongo_client():
     Automatically mocks the MongoClient for all tests so we don't 
     accidentally hit a real database during edge-case testing.
     """
-    with patch('db_api.MongoClient') as mock_client:
+    with patch('src.Server.MongoClient') as mock_client:
         # Reset the Singleton instance before each test to ensure a clean slate
         DB_API._instance = None 
         yield mock_client
