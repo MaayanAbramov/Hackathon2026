@@ -33,4 +33,4 @@ jobs:
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
-        python3 Server.py
+        python3 src/Server.py
