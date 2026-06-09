@@ -161,6 +161,5 @@ class DB_API:
         except Exception as e:
             print(f"Aggregation query failed: {e}")
             return None
-        
 if __name__ == "__main__":
     print("hola")
