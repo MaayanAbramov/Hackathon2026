@@ -13,7 +13,7 @@ from src.constants import (
 
 load_dotenv()  # Load environment variables from .env file
 db_string = os.getenv("DATABASE_URL")
-
+ 
 class PatientInfo:
     def __init__(self, patientNumber, location):
         """Initializes a new PatientInfo instance with a validated patient number and location."""
