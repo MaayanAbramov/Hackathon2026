@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 # Import the extracted constants
-from src.constants import (
+from src.server.constants import (
     PERMITTED_FIELDS, 
     FIELD_TO_PERMITTED_TYPE, 
     RAMBAM_DEPARTMENTS_LIST, 
@@ -161,6 +161,5 @@ class DB_API:
         except Exception as e:
             print(f"Aggregation query failed: {e}")
             return None
-        #this is a test
 if __name__ == "__main__":
     print("hola")
