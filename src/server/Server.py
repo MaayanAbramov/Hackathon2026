@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 # Import the extracted constants
-from src.constants import (
+from src.server.constants import (
     PERMITTED_FIELDS, 
     FIELD_TO_PERMITTED_TYPE, 
     RAMBAM_DEPARTMENTS_LIST, 
