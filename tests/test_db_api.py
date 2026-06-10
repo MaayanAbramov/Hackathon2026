@@ -12,7 +12,7 @@ def mock_db():
     UNIT TEST FIXTURE: Fakes the database connection. 
     Use this for testing data validation and logic instantly without a network.
     """
-    with patch('src.server.Server.MongoClient') as mock_client:
+    with patch('src.server.DB_API.MongoClient') as mock_client:
         DB_API._instance = None 
         yield mock_client
 
@@ -26,8 +26,8 @@ def real_test_db():
     from src.server.DB_API import db_string 
     fast_fail_db_string = f"{db_string}{'&' if '?' in db_string else '?'}serverSelectionTimeoutMS=2000"
 
-    with patch('src.server.Server.COLLECTION_NAME', 'hackathon_test'), \
-         patch('src.server.Server.db_string', fast_fail_db_string):
+    with patch('src.server.DB_API.COLLECTION_NAME', 'hackathon_test'), \
+         patch('src.server.DB_API.db_string', fast_fail_db_string):
              
         DB_API._instance = None 
         yield 
