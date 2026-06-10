@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from src.server.Server import DB_API, PatientInfo
+from src.server.DB_API import DB_API, PatientInfo
 
 # =====================================================================
 # FIXTURES (Choose which one to use for each test!)
@@ -23,7 +23,7 @@ def real_test_db():
     INTEGRATION TEST FIXTURE: Connects to the real database's 'hackathon_test' collection.
     Use this ONLY when testing actual read/write operations to the DB.
     """
-    from src.server.Server import db_string 
+    from src.server.DB_API import db_string 
     fast_fail_db_string = f"{db_string}{'&' if '?' in db_string else '?'}serverSelectionTimeoutMS=2000"
 
     with patch('src.server.Server.COLLECTION_NAME', 'hackathon_test'), \
