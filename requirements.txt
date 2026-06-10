@@ -29,7 +29,7 @@ matplotlib==3.10.8
 meson==1.11.1
 ninja==1.13.0
 nodeenv==1.10.0
-numpy==2.4.0
+numpy==2.2.6
 opencv-python==4.13.0.92
 packaging==25.0
 pexpect==4.9.0
