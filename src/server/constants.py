@@ -22,3 +22,5 @@ RAMBAM_DEPARTMENTS_LIST = [
 # Database Configurations
 DB_NAME = 'Hackathon'
 COLLECTION_NAME = 'HackathonData'
+
+test ="yipee"
