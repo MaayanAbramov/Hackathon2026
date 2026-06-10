@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: run-pytest
         name: Run Pytest before Push
-        entry: python -m pytest
+        entry: python3 -m pytest
         language: system
         pass_filenames: false
         stages: [ pre-push ]
