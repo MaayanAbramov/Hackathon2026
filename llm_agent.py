@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
-from src.server.Server import DB_API 
+from src.server.DB_API import DB_API 
 
 db = DB_API()
 
@@ -28,7 +28,7 @@ def ask_assistant(user_message: str) -> str:
         
 
         if intent == "count_patients":
-            # טיפול בבקשת ספירה כוללת
+         
             total_count = db.GetTotalPatientsCount()
             raw_db_result = f"DB_RESULT: The total number of patients currently in the hospital is {total_count}."
             
