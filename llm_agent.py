@@ -11,9 +11,10 @@ llm_text = ChatOllama(model="llama3.1", temperature=0)
 def ask_assistant(user_message: str) -> str:
 
     query_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a medical data extractor. Extract the patient number from the user's input. "
-                   "Output ONLY a valid JSON object representing a database query filter. "
-                   "Example: {{\"patientNumber\": 123}}"),
+        ("system", "You are a medical data extractor. Analyze the user's input and determine their intent. "
+                   "Output ONLY a valid JSON object based on the following rules:\n"
+                   "- If they ask about a specific patient, output: {{\"intent\": \"find_patient\", \"patientNumber\": 123}}\n"
+                   "- If they ask for the total number/sum/amount of patients, output: {{\"intent\": \"count_patients\"}}"),
         ("human", "{text}")
     ])
     
@@ -23,17 +24,29 @@ def ask_assistant(user_message: str) -> str:
         mongo_query_params = query_chain.invoke({"text": user_message})
         print(f"[*] Step 1 - AI Generated Query Params: {mongo_query_params}")
         
-        patient_num = mongo_query_params.get("patientNumber")
+        intent = mongo_query_params.get("intent")
         
-        if not patient_num:
-            return "Could not understand which patient number you are looking for."
+
+        if intent == "count_patients":
+            # טיפול בבקשת ספירה כוללת
+            total_count = db.GetTotalPatientsCount()
+            raw_db_result = f"DB_RESULT: The total number of patients currently in the hospital is {total_count}."
             
-        p_info = db.SearchForPatient(int(patient_num))
+        elif intent == "find_patient":
         
-        if p_info:
-            raw_db_result = f"DB_RESULT: Patient {patient_num} found. Location: {p_info.location}."
+            patient_num = mongo_query_params.get("patientNumber")
+            if not patient_num:
+                return "Could not understand which patient number you are looking for."
+                
+            p_info = db.SearchForPatient(int(patient_num))
+            
+            if p_info:
+                raw_db_result = f"DB_RESULT: Patient {patient_num} found. Location: {p_info.location}."
+            else:
+                raw_db_result = f"DB_RESULT: Patient {patient_num} does not exist in records."
+        
         else:
-            raw_db_result = f"DB_RESULT: Patient {patient_num} does not exist in records."
+            return "Sorry, I didn't understand the request."
             
         print(f"[*] Step 2 - Raw DB Result: {raw_db_result}")
 
@@ -45,7 +58,6 @@ def ask_assistant(user_message: str) -> str:
         ])
         
         humanize_chain = humanize_prompt | llm_text
-        
         final_response = humanize_chain.invoke({"raw_data": raw_db_result})
         
         return final_response.content
@@ -54,13 +66,15 @@ def ask_assistant(user_message: str) -> str:
         return f"System processing error: {str(e)}"
 
 if __name__ == "__main__":
-    print(" FindMyPatient Pipeline is starting up...")
+    print("🚀 FindMyPatient Pipeline is starting up...")
     
-    test_question = "I want to know how many patients are there in total?"
-    print(f"\nUser Query: '{test_question}'\n")
-    print("-" * 10)
-    
-    final_answer = ask_assistant(test_question)
-    
-    print("-" * 10)
-    print(f" Final Humanized Answer:\n{final_answer}")
+   
+    test_question_1 = "Give the sum of total clients"
+    print(f"\n--- Test 1 ---")
+    print(f"User Query: '{test_question_1}'")
+    print(f"💬 Final Answer:\n{ask_assistant(test_question_1)}")
+
+    test_question_2 = "Where is client 1 located?"
+    print(f"\n--- Test 2 ---")
+    print(f"User Query: '{test_question_2}'")
+    print(f"💬 Final Answer:\n{ask_assistant(test_question_2)}")

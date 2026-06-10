@@ -93,6 +93,13 @@ class DB_API:
         except Exception as e:
             print(f"Database query failed: {e}")
             return None
+    def GetTotalPatientsCount(self):
+        """ returns the total numbers of patients currently in the database."""
+        try:
+            return self.collection.count_documents({})
+        except Exception as e:
+            print(f"Database count failed: {e}")
+            return 0
 
     def UpdatePatientLocation(self, patientNumber = None, new_location = None):
         """Updates an existing patient's location in the database and returns the updated object."""
