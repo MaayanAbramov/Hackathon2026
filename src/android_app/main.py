@@ -8,13 +8,20 @@ from kivy.uix.checkbox import CheckBox
 from kivy.clock import Clock
 from kivy.utils import platform
 from kivy.logger import Logger
+from kivy.network.urlrequest import UrlRequest
 import random
+import json
 
 from kivy_garden.zbarcam import ZBarCam
 
 class ScannerApp(App):
     def build(self):
         Logger.info("ScannerApp: Booting up UI...")
+        
+        # --- API Configuration ---
+        # Change these to match your Flask server's IP and port
+        self.SERVER_IP = "132.68.41.143" 
+        self.SERVER_PORT = "5000"
         
         # Increased padding and spacing for a more spacious layout
         self.main_layout = BoxLayout(orientation='vertical', padding=40, spacing=30)
@@ -41,11 +48,9 @@ class ScannerApp(App):
         # --- Remove Checkbox Row (Moved Below Rows & Increased Size) ---
         self.remove_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=80, spacing=10)
         
-        # Made the checkbox significantly larger to fix the tiny size issue
         self.remove_checkbox = CheckBox(size_hint=(None, None), size=(80, 80))
         self.remove_checkbox.bind(active=self.toggle_remove_mode)
         
-        # Removed the fixed width so the text no longer gets clipped/squished out of view
         lbl_remove = Label(text="Remove Patient", halign="left", valign="center", size_hint_x=1)
         lbl_remove.bind(size=lbl_remove.setter('text_size'))
         
@@ -74,25 +79,18 @@ class ScannerApp(App):
         """Clears and redraws the main layout based on the Checkbox state."""
         self.main_layout.clear_widgets()
         
-        # Added Patient Row first
         self.main_layout.add_widget(self.row1)
         
-        # Only add Dept Row if "Remove Patient" is NOT checked
         if not self.remove_checkbox.active:
             self.main_layout.add_widget(self.row2)
             
-        # Add the Remove Checkbox row directly below the scan fields
         self.main_layout.add_widget(self.remove_row)
         
-        # Add the rest of the UI
         self.main_layout.add_widget(self.btn_submit)
         self.main_layout.add_widget(self.output_label)
 
     def toggle_remove_mode(self, instance, value):
-        """Triggered whenever the Checkbox is checked or unchecked."""
         self.update_layout()
-        
-        # Clear out the room/dept field when hidden so old data isn't sitting there
         if value:
             self.field2.text = ""
 
@@ -118,24 +116,16 @@ class ScannerApp(App):
         self.scanner_popup = Popup(title="Scanning...", content=popup_layout, size_hint=(0.9, 0.9))
 
     def open_scanner(self, target_field):
-        """Prepares the UI, but waits to turn on the camera."""
         self.current_scan_field = target_field
         self.zbarcam.symbols.clear()
-        
-        # Open the UI popup immediately...
         self.scanner_popup.open()
-        
-        # ...but give Android hardware 0.5 seconds to catch up before turning the camera on
         Clock.schedule_once(self._start_camera_hardware, 0.5)
 
     def _start_camera_hardware(self, dt):
-        """Actually turns the camera on (called via Clock)."""
         self.zbarcam.ids.xcamera.play = True
         self.scan_event = Clock.schedule_interval(self.check_scan, 0.1)
 
     def check_scan(self, dt):
-        """Fires 10 times a second to check for decoded symbols."""
-        Logger.debug(f"ScannerApp: Tick... Symbols found: {len(self.zbarcam.symbols)}")
         if len(self.zbarcam.symbols) > 0:
             scanned_data = self.zbarcam.symbols[0].data.decode('utf-8')
             Logger.info(f"ScannerApp: *** SYMBOL DECODED: {scanned_data} ***")
@@ -143,24 +133,27 @@ class ScannerApp(App):
             self.close_scanner()
 
     def close_scanner(self, *args):
-        """Closes the UI, but delays turning off the camera."""
         if self.scan_event:
             self.scan_event.cancel()
             self.scan_event = None
-        
-        # Close the popup UI immediately...
         self.scanner_popup.dismiss()
-        
-        # ...but give Android 0.3 seconds to finish its animations before killing the hardware
         Clock.schedule_once(self._stop_camera_hardware, 0.3)
 
     def _stop_camera_hardware(self, dt):
-        """Actually turns the camera off (called via Clock)."""
         self.zbarcam.ids.xcamera.play = False
 
     def submit_action(self, instance):
         patient_number = self.field1.text.strip()
         dept_barcode = self.field2.text.strip()
+        
+        # --- NEW: Validation Check ---
+        # If the field isn't empty, check if it's strictly numeric
+        if patient_number and not patient_number.isnumeric():
+            error_msg = f"Patient number '{patient_number}' is not a number, please scan the correct patient barcode and try submitting again."
+            self.output_label.text = error_msg
+            Logger.info(f"ScannerApp: Validation failed -> {error_msg}")
+            return
+        # -----------------------------
         
         # Path 1: "Remove Patient" is Checked
         if self.remove_checkbox.active:
@@ -168,7 +161,6 @@ class ScannerApp(App):
                 self.output_label.text = "Please scan/enter patient number to remove."
                 return
             
-            # Create the confirmation popup
             content = BoxLayout(orientation='vertical', spacing=15, padding=10)
             msg_label = Label(text="Removed was checked, please approve removal", halign='center')
             content.add_widget(msg_label)
@@ -188,8 +180,8 @@ class ScannerApp(App):
                 auto_dismiss=False
             )
 
-            # Bind the popup buttons
-            btn_cancel.bind(on_press=self.confirm_popup.dismiss) # Closes popup, nothing else happens
+            btn_cancel.bind(on_press=self.confirm_popup.dismiss)
+            # Pass the validated patient_number to process_removal
             btn_ok.bind(on_press=lambda x: self.process_removal(patient_number))
             
             self.confirm_popup.open()
@@ -197,25 +189,72 @@ class ScannerApp(App):
         # Path 2: Standard Submission Mode
         else:
             if patient_number and dept_barcode:
-                message = f"Patient Number : {patient_number} with department {dept_barcode}\nhas been successfully submitted."
-                self.output_label.text = message 
-                Logger.info(f"ScannerApp: Form submitted successfully -> Patient: {patient_number}, Dept: {dept_barcode}")
+                self.output_label.text = "Sending data to server..."
                 
-                # Reset the scan fields back to empty
-                self.field1.text = ""
-                self.field2.text = ""
+                # Setup payload and URL for standard upsert
+                # --- NEW: Convert patient_number to int() ---
+                payload = {
+                    "patientNumber": int(patient_number),
+                    "roombarcode": dept_barcode
+                }
+                url = f"http://{self.SERVER_IP}:{self.SERVER_PORT}/api/update_location"
+                headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+                
+                # Send the async request
+                UrlRequest(
+                    url,
+                    req_body=json.dumps(payload),
+                    req_headers=headers,
+                    method='POST',
+                    on_success=self.on_upsert_success,
+                    on_failure=self.on_request_error,
+                    on_error=self.on_request_error
+                )
+                Logger.info(f"ScannerApp: Sending request -> Patient : {patient_number}, Dept: {dept_barcode}")
             else:
                 self.output_label.text = "Please complete both scans first."
                 Logger.info("ScannerApp: Form submission rejected (fields empty)")
 
     def process_removal(self, patient_number):
-        """Callback for when the user clicks 'OK' on the remove confirmation popup."""
+        """Triggered when the user approves the removal popup."""
         self.confirm_popup.dismiss()
-        self.output_label.text = f"Patient number {patient_number} was removed"
-        Logger.info(f"ScannerApp: Patient removed -> Patient: {patient_number}")
+        self.output_label.text = "Sending removal request to server..."
         
-        # Reset the patient scan field
+        # Setup payload and URL for removal
+        # --- NEW: Convert patient_number to int() ---
+        payload = {
+            "patientNumber": int(patient_number)
+        }
+        url = f"http://{self.SERVER_IP}:{self.SERVER_PORT}/api/remove_patient"
+        headers = {'Content-type': 'application/json'}
+        
+        # Send the async request
+        UrlRequest(
+            url,
+            req_body=json.dumps(payload),
+            req_headers=headers,
+            method='POST',
+            on_success=self.on_remove_success,
+            on_failure=self.on_request_error,
+            on_error=self.on_request_error
+        )
+
+    # --- Async Request Callbacks ---
+    
+    def on_upsert_success(self, request, result):
+        Logger.info(f"ScannerApp: Upsert successful -> Server response: {result}")
+        self.output_label.text = "Patient successfully submitted."
         self.field1.text = ""
+        self.field2.text = ""
+        
+    def on_remove_success(self, request, result):
+        Logger.info(f"ScannerApp: Removal successful -> Server response: {result}")
+        self.output_label.text = "Patient was removed."
+        self.field1.text = ""
+
+    def on_request_error(self, request, error):
+        Logger.error(f"ScannerApp: Server request failed -> {error}")
+        self.output_label.text = "Error communicating with server.\nPlease check your connection."
 
 if __name__ == '__main__':
     ScannerApp().run()
