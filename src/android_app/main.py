@@ -5,17 +5,19 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
+from kivy.utils import platform
+from kivy.logger import Logger  # <-- IMPORT THE LOGGER
 import random
 
-# Import the camera and scanning tool
 from kivy_garden.zbarcam import ZBarCam
 
 class ScannerApp(App):
     def build(self):
+        Logger.info("ScannerApp: Booting up UI...")
         self.main_layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
         
-        # Track which field we are currently scanning for
         self.current_scan_field = None 
+        self.scan_event = None
 
         # --- Row 1 ---
         row1 = BoxLayout(orientation='horizontal', spacing=10, size_hint_y=0.2)
@@ -43,58 +45,88 @@ class ScannerApp(App):
         self.main_layout.add_widget(btn_submit)
         self.main_layout.add_widget(self.output_label)
 
+        self.setup_scanner_popup()
         return self.main_layout
 
-    def open_scanner(self, target_field):
-        """Opens a popup containing the camera feed."""
-        self.current_scan_field = target_field
+    def on_start(self):
+        if platform == 'android':
+            Logger.info("ScannerApp: Requesting Android permissions...")
+            from android.permissions import request_permissions, Permission
+            request_permissions([Permission.CAMERA])
 
+    def setup_scanner_popup(self):
+        Logger.info("ScannerApp: Initializing singleton ZBarCam...")
         popup_layout = BoxLayout(orientation='vertical')
         
-        # Initialize the camera widget
         self.zbarcam = ZBarCam()
+        self.zbarcam.ids.xcamera.play = False 
+        
         popup_layout.add_widget(self.zbarcam)
 
-        # Cancel button just in case the user changes their mind
         btn_cancel = Button(text="Cancel", size_hint_y=0.2)
         btn_cancel.bind(on_press=self.close_scanner)
         popup_layout.add_widget(btn_cancel)
 
-        # Create and open the popup
         self.scanner_popup = Popup(title="Scanning...", content=popup_layout, size_hint=(0.9, 0.9))
-        self.scanner_popup.open()
 
-        # Start a fast clock to check if the camera saw a barcode
+
+    def check_scan(self, dt):
+        # We use debug here so it doesn't flood the console *too* heavily, but we can still see it.
+        Logger.debug(f"ScannerApp: Tick... Symbols found: {len(self.zbarcam.symbols)}")
+        
+        if len(self.zbarcam.symbols) > 0:
+            scanned_data = self.zbarcam.symbols[0].data.decode('utf-8')
+            Logger.info(f"ScannerApp: *** SYMBOL DECODED: {scanned_data} ***")
+            self.current_scan_field.text = scanned_data
+            self.close_scanner()
+
+    def open_scanner(self, target_field):
+        """Prepares the UI, but waits to turn on the camera."""
+        self.current_scan_field = target_field
+        self.zbarcam.symbols.clear()
+        
+        # Open the UI popup immediately...
+        self.scanner_popup.open()
+        
+        # ...but give Android hardware 0.5 seconds to catch up before turning the camera on
+        Clock.schedule_once(self._start_camera_hardware, 0.5)
+
+    def _start_camera_hardware(self, dt):
+        """Actually turns the camera on (called via Clock)."""
+        self.zbarcam.ids.xcamera.play = True
         self.scan_event = Clock.schedule_interval(self.check_scan, 0.1)
 
     def check_scan(self, dt):
         """Fires 10 times a second to check for decoded symbols."""
         if len(self.zbarcam.symbols) > 0:
-            # Grab the very first barcode it sees and decode the bytes to a string
             scanned_data = self.zbarcam.symbols[0].data.decode('utf-8')
-            
-            # Fill the text input with the data
             self.current_scan_field.text = scanned_data
-            
-            # Close the camera
             self.close_scanner()
 
     def close_scanner(self, *args):
-        """Safely shuts down the camera and popup."""
+        """Closes the UI, but delays turning off the camera."""
         if self.scan_event:
             self.scan_event.cancel()
+            self.scan_event = None
         
-        # Force the camera to stop reading to free up hardware memory
-        self.zbarcam.ids.xcamera.play = False 
+        # Close the popup UI immediately...
         self.scanner_popup.dismiss()
+        
+        # ...but give Android 0.3 seconds to finish its animations before killing the hardware
+        Clock.schedule_once(self._stop_camera_hardware, 0.3)
+
+    def _stop_camera_hardware(self, dt):
+        """Actually turns the camera off (called via Clock)."""
+        self.zbarcam.ids.xcamera.play = False
 
     def submit_action(self, instance):
         if self.field1.text.strip() and self.field2.text.strip():
             message = random.choice(["Submitted", "Hola Senior"])
-            print(message) 
             self.output_label.text = message 
+            Logger.info(f"ScannerApp: Form submitted successfully -> {message}")
         else:
             self.output_label.text = "Please complete both scans first."
+            Logger.info("ScannerApp: Form submission rejected (fields empty)")
 
 if __name__ == '__main__':
     ScannerApp().run()
