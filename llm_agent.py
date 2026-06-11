@@ -2,6 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 from src.server.DB_API import DB_API 
+import ast
 
 db = DB_API()
 
@@ -38,8 +39,8 @@ def ask_assistant(user_message: str) -> str:
         
         # if not action:
         #     return "Could not generate a valid database action."
-            
-        db_result = db.CustomAggregationQuery(mongo_query)
+        literal_mongo_query = ast.literal_eval(mongo_query)
+        db_result = db.CustomAggregationQuery(literal_mongo_query)
         
         # TODO CHECK IF SUCCESSFUL, return an apologetic "sorry i couldnt get/understand/whatever"
 

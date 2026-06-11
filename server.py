@@ -11,8 +11,13 @@ db = DB_API()
 @app.route('/api/ask', methods=['POST'])
 def handle_ask_assistant():
     data = request.json
-    user_request = data.get("request")
-    user_message = data.get("message")
+    try:
+        user_request = (int)(data.get("request"))
+        user_message = data.get("message")
+    except Exception as e:
+        print(f" ERROR in /api/ask: {e}")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
     if not user_message or not user_request:
         return jsonify({"error": "Missing payload. Please provide with both the fields \"request\" and \"message\"."}), 400
