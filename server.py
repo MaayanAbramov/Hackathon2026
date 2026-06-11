@@ -26,7 +26,8 @@ def processApiRequest(request, message):
         if user_request == PRESET_QUERIES.Locate_Patient.value:
             if not message.isnumeric():
                 return jsonify({"error": "Patient number must be numeric."}), 500
-            response = db.SearchForPatient(int(user_message))
+            p_info = db.SearchForPatient(int(user_message))
+            response = p_info.to_dict() if p_info else "Patient not found."
         elif user_request == PRESET_QUERIES.Room_Occupancy.value:
             response = db.GetRoomPatientsCount(user_message)
         elif user_request == PRESET_QUERIES.Total_Occupancy.value:

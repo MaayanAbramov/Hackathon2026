@@ -1,9 +1,9 @@
 # constants.py
 from enum import Enum
 
-PERMITTED_FIELDS = ["patientNumber", "location"]
+PERMITTED_FIELDS = ["patientNumber", "location", "location_history"]
 
-FIELD_TO_PERMITTED_TYPE = {"patientNumber": int, "location": str}
+FIELD_TO_PERMITTED_TYPE = {"patientNumber": int, "location": str, "location_history": list}
 
 RAMBAM_DEPARTMENTS_LIST = [
     "oncology", "urology", "orthopedics", "pediatric orthopedics",
@@ -21,7 +21,7 @@ RAMBAM_DEPARTMENTS_LIST = [
 ]
 
 class PRESET_QUERIES(Enum):
-    Locate_Patient = 1
+    Locate_Patient = 1 
     Room_Occupancy = 2
     Total_Occupancy = 3
     Administration_Time = 4
