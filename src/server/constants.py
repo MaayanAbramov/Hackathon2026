@@ -21,11 +21,7 @@ RAMBAM_DEPARTMENTS_LIST = [
 ]
 
 class PRESET_QUERIES(Enum):
-<<<<<<< HEAD
     Locate_Patient = 1 
-=======
-    Locate_Patient = 1
->>>>>>> 7f9384aba3740fcae67e126a674582222bd78679
     Room_Occupancy = 2
     Total_Occupancy = 3
     Administration_Time = 4
