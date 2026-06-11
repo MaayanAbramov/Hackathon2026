@@ -10,47 +10,40 @@ llm_json = ChatOllama(model="llama3.1", temperature=0, format="json")
 llm_text = ChatOllama(model="llama3.1", temperature=0)
 
 def ask_assistant(user_message: str) -> str:
-
+    # text to mongo
     query_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a medical data extractor. Analyze the user's input and determine their intent. "
-                   "Output ONLY a valid JSON object based on the following rules:\n"
-                   "- If they ask about a specific patient, output: {{\"intent\": \"find_patient\", \"patientNumber\": 123}}\n"
-                   "- If they ask for the total number/sum/amount of patients, output: {{\"intent\": \"count_patients\"}}"),
+        ("system", "You are a MongoDB expert. Translate the user's natural language request into a MongoDB query. "
+                   "The database collection has patients with fields like 'patientNumber', 'location', etc. "
+                   "Output ONLY a valid JSON object with exactly two keys:\n"
+                   "1. 'action': strictly use 'find' to search for records, or 'count' to get a total number.\n"
+                   "2. 'filter': a valid MongoDB query dictionary.\n"
+                   "Examples:\n"
+                   "- For 'where is patient 123?': {{\"action\": \"find\", \"filter\": {{\"patientNumber\": 123}}}}\n"
+                   "- For 'how many patients are there?': {{\"action\": \"count\", \"filter\": {{}}}}\n"
+                   "- For 'find all patients in the ER': {{\"action\": \"find\", \"filter\": {{\"location\": \"ER\"}}}}"),
         ("human", "{text}")
     ])
     
     query_chain = query_prompt | llm_json | JsonOutputParser()
     
     try:
-        mongo_query_params = query_chain.invoke({"text": user_message})
-        print(f"[*] Step 1 - AI Generated Query Params: {mongo_query_params}")
+        # text to query
+        mongo_query = query_chain.invoke({"text": user_message})
+        print(f"[*] Step 1 - Dynamic Mongo Query: {mongo_query}")
         
-        intent = mongo_query_params.get("intent")
+        action = mongo_query.get("action")
+        query_filter = mongo_query.get("filter", {})
         
-
-        if intent == "count_patients":
-         
-            total_count = db.GetTotalPatientsCount()
-            raw_db_result = f"DB_RESULT: The total number of patients currently in the hospital is {total_count}."
+        
+        if not action:
+            return "Could not generate a valid database action."
             
-        elif intent == "find_patient":
+        db_result = db.ExecuteDynamicQuery(action, query_filter)
         
-            patient_num = mongo_query_params.get("patientNumber")
-            if not patient_num:
-                return "Could not understand which patient number you are looking for."
-                
-            p_info = db.SearchForPatient(int(patient_num))
-            
-            if p_info:
-                raw_db_result = f"DB_RESULT: Patient {patient_num} found. Location: {p_info.location}."
-            else:
-                raw_db_result = f"DB_RESULT: Patient {patient_num} does not exist in records."
-        
-        else:
-            return "Sorry, I didn't understand the request."
-            
+        raw_db_result = f"DB_RESULT: Action '{action}' with filter {query_filter} returned: {db_result}"
         print(f"[*] Step 2 - Raw DB Result: {raw_db_result}")
 
+     
         humanize_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are the FindMyPatient friendly assistant. "
                        "Take the raw database result provided and turn it into a helpful, natural, and polite sentence in English. "
@@ -67,15 +60,22 @@ def ask_assistant(user_message: str) -> str:
         return f"System processing error: {str(e)}"
 
 if __name__ == "__main__":
-    print("🚀 FindMyPatient Pipeline is starting up...")
+    print(" FindMyPatient Dynamic Pipeline is starting up...")
     
-   
-    test_question_1 = "Give the sum of total clients"
-    print(f"\n--- Test 1 ---")
-    print(f"User Query: '{test_question_1}'")
-    print(f"💬 Final Answer:\n{ask_assistant(test_question_1)}")
+    test_questions = [
+        "How many patients are registered in the system?",          
+        "Can you tell me where patient number 123 is located?",      
+        "Show me all the patients that are currently in the ER",     
+        "Are there any patients in the Cardiology department?"       
+    ]
 
-    test_question_2 = "Where is client 1 located?"
-    print(f"\n--- Test 2 ---")
-    print(f"User Query: '{test_question_2}'")
-    print(f"💬 Final Answer:\n{ask_assistant(test_question_2)}")
+    for i, question in enumerate(test_questions, 1):
+        print(f"\n" + "="*50)
+        print(f" TEST {i}")
+        print(f" User Query: '{question}'")
+        print("-" * 50)
+        
+        final_answer = ask_assistant(question)
+        
+        print("-" * 50)
+        print(f" Final Answer:\n{final_answer}")
