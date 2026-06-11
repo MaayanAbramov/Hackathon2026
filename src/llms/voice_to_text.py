@@ -11,7 +11,7 @@ def _get_model(model_size="small"):
     return _model
 
 
-def transcribe(audio_path: str, language: str = None, model_size: str = "small") -> dict:
+def transcribe(audio_path: str, language: str = None, model_size: str = "medium") -> dict:
     """
     Transcribe an audio file to text.
 
