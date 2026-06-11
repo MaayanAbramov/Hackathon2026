@@ -1,4 +1,5 @@
 # constants.py
+from enum import Enum
 
 PERMITTED_FIELDS = ["patientNumber", "location"]
 
@@ -18,6 +19,16 @@ RAMBAM_DEPARTMENTS_LIST = [
     "cardiology", "rheumatology", "pulmonology", "emergency medicine",
     "pediatric emergency medicine", "rehabilitation"
 ]
+
+class PRESET_QUERIES(Enum):
+    Locate_Patient = 0
+    Room_Occupancy = 1
+    Total_Occupancy = 2
+    Administration_Time = 3
+    Idle_Time = 4
+    Other = 5
+
+# PRESET_QUERIES = ["Locate Patient", "Room Occupancy", "Total Occupancy", "Administration Time", "Idle Time", "Other"]
 
 # Database Configurations
 DB_NAME = 'Hackathon'

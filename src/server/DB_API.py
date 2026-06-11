@@ -168,17 +168,37 @@ class DB_API:
         except Exception as e:
             print(f"Aggregation query failed: {e}")
             return None
-    def ExecuteDynamicQuery(self, action: str, query_filter: dict):
         
+    def GetRoomPatientsCount(self, room):
+        """ returns the total numbers of patients currently in a given room."""
+        if not room in DB_API.RAMBAM_DEPARTMENTS_LIST:
+            return 0
+        else:
+            try:
+                return self.collection.count_documents({"location":room}) 
+            except Exception as e:
+                print(f"Database count failed: {e}")
+                return 0
+        
+    def GetAdministrationTime(self, patientNumber=None):
+        """ returns the time of administration of a patient."""
+        self.raise_if_illegal(user_data={"patientNumber": patientNumber})
+
         try:
-            if action == "count":
-                return self.collection.count_documents(query_filter)
-            elif action == "find":
-                
-                return list(self.collection.find(query_filter, {"_id": 0}).limit(5))
-            else:
-                return "Unsupported action."
+            return self.collection.count_documents({}) #TODO
         except Exception as e:
-            return f"DB Error: {str(e)}"
+            print(f"Database count failed: {e}")
+            return 0
+        
+    def GetIdleTime(self, patientNumber=None):
+        """ returns the idle time of a patient."""
+        self.raise_if_illegal(user_data={"patientNumber": patientNumber})
+
+        try:
+            return self.collection.count_documents({}) #TODO
+        except Exception as e:
+            print(f"Database count failed: {e}")
+            return 0
+        
 if __name__ == "__main__":
     print("hola")

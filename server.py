@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import traceback 
 from llm_agent import ask_assistant
 from src.server.DB_API import DB_API
+from src.server.constants import PRESET_QUERIES
+
 
 app = Flask(__name__)
 db = DB_API()
@@ -9,13 +11,28 @@ db = DB_API()
 @app.route('/api/ask', methods=['POST'])
 def handle_ask_assistant():
     data = request.json
+    user_request = data.get("request")
     user_message = data.get("message")
 
-    if not user_message:
-        return jsonify({"error": "No message provided"}), 400
+    if not user_message or not user_request:
+        return jsonify({"error": "Missing payload. Please provide with both the fields \"request\" and \"message\"."}), 400
     try:
-        ai_response = ask_assistant(user_message)
-        return jsonify({"response": ai_response}), 200
+        response = None
+        if user_request == PRESET_QUERIES.Locate_Patient:
+            response = db.SearchForPatient((int)(user_message))
+        elif user_request == PRESET_QUERIES.Room_Occupancy:
+            response = db.GetRoomPatientsCount(user_message)
+        elif user_request == PRESET_QUERIES.Total_Occupancy:
+            response = db.GetTotalPatientsCount()
+        elif user_request == PRESET_QUERIES.Administration_Time:
+            response = db.GetAdministrationTime((int)(user_message))
+        elif user_request == PRESET_QUERIES.Idle_Time:
+            response = db.GetIdleTime((int)(user_message))
+        elif user_request == PRESET_QUERIES.Other:
+            response = ask_assistant(user_message)
+        else:
+            response = "Unknown request. Please provide a request from the allegeable list."
+        return jsonify({"response": response}), 200
     except Exception as e:
         print(f" ERROR in /api/ask: {e}")
         traceback.print_exc()
