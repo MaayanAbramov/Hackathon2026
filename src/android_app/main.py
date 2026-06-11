@@ -51,16 +51,15 @@ class ScannerApp(App):
         
         self.current_scan_field = None 
         self.scan_event = None
-        self.routing_path = [] # Stores doctor routing sequence
+        self.routing_path = [] # Stores doctor routing sequence as tuples: [(room, urgency), ...]
 
         self.main_layout = BoxLayout(orientation='vertical', padding=[20, 40, 20, 20], spacing=20)
         
         # --- Header ---
-        header = Label(
+        self.header = Label(
             text="FindMyPatient ER Triage", font_size='22sp', bold=True, color=ACCENT_YELLOW,
             size_hint_y=None, height=50, halign='center', valign='middle'
         )
-        self.main_layout.add_widget(header)
 
         # ==========================================
         # CARD 1: Patient Identification
@@ -81,43 +80,28 @@ class ScannerApp(App):
         self.card_patient.add_widget(self.row1)
 
         # ==========================================
-        # CARD 2: Clinical & Routing Data
+        # CARD 2: Clinical Data (Nurse Flow Only)
         # ==========================================
-        self.card_action = RoundedCard(size_hint_y=None, height=250)
-        self.lbl_action = Label(text="2. Clinical & Routing Data", bold=True, color=TEXT_COLOR, size_hint_y=None, height=40, halign='left', valign='middle')
+        self.card_action = RoundedCard(size_hint_y=None, height=160)
+        self.lbl_action = Label(text="2. Room Assignment (Nurse)", bold=True, color=TEXT_COLOR, size_hint_y=None, height=40, halign='left', valign='middle')
         self.lbl_action.bind(size=self.lbl_action.setter('text_size'))
         
-        # Doctor Checkbox Row
-        self.doctor_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=40, spacing=10)
-        self.chk_doctor = CheckBox(size_hint=(None, None), size=(40, 40), color=ACCENT_YELLOW)
-        self.chk_doctor.bind(active=self.toggle_doctor_mode)
-        lbl_doctor = Label(text="I am a doctor (Create Path)", halign="left", valign="middle", color=TEXT_COLOR)
-        lbl_doctor.bind(size=lbl_doctor.setter('text_size'))
-        self.doctor_row.add_widget(self.chk_doctor)
-        self.doctor_row.add_widget(lbl_doctor)
-
-        # Nurse Layout (Default)
-        self.nurse_layout = BoxLayout(orientation='vertical', size_hint_y=None, height=60)
         self.row2 = BoxLayout(orientation='horizontal', spacing=15, size_hint_y=None, height=50)
         self.field2 = TextInput(hint_text="Room/Department Barcode", multiline=False, size_hint_x=0.7, background_color=(0.2, 0.2, 0.2, 1), foreground_color=TEXT_COLOR)
         btn_scan2 = Button(text="Scan Room", size_hint_x=0.3, background_normal='', background_color=ACCENT_YELLOW, color=DARK_TEXT, bold=True)
         btn_scan2.bind(on_press=lambda instance: self.open_scanner(self.field2))
+        
         self.row2.add_widget(self.field2)
         self.row2.add_widget(btn_scan2)
-        self.nurse_layout.add_widget(self.row2)
-
-        # Doctor Layout
-        self.doctor_layout = BoxLayout(orientation='vertical', size_hint_y=None, height=100, spacing=10)
-        self.btn_set_routing = Button(text="Edit Routing Path", background_normal='', background_color=ACCENT_YELLOW, color=DARK_TEXT, bold=True, size_hint_y=None, height=50)
-        self.btn_set_routing.bind(on_press=self.open_routing_window)
-        self.lbl_routing_summary = Label(text="No path set.", color=TEXT_COLOR, size_hint_y=None, height=40)
-        self.doctor_layout.add_widget(self.btn_set_routing)
-        self.doctor_layout.add_widget(self.lbl_routing_summary)
+        self.card_action.add_widget(self.lbl_action)
+        self.card_action.add_widget(self.row2)
 
         # ==========================================
-        # CARD 3: System Controls & Submission
+        # CARD 3: System Controls & Doctor Flow
         # ==========================================
         self.card_controls = RoundedCard(size_hint_y=1)
+        
+        # Remove Checkbox Row
         self.remove_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=50, spacing=10)
         self.remove_checkbox = CheckBox(size_hint=(None, None), size=(50, 50), color=ACCENT_YELLOW)
         self.remove_checkbox.bind(active=self.toggle_remove_mode)
@@ -126,15 +110,28 @@ class ScannerApp(App):
         self.remove_row.add_widget(self.remove_checkbox)
         self.remove_row.add_widget(lbl_remove)
 
+        # Doctor Checkbox Row
+        self.doctor_row = BoxLayout(orientation='horizontal', size_hint_y=None, height=50, spacing=10)
+        self.chk_doctor = CheckBox(size_hint=(None, None), size=(50, 50), color=ACCENT_YELLOW)
+        self.chk_doctor.bind(active=self.toggle_doctor_mode)
+        lbl_doctor = Label(text="I am a doctor (Create Routing Path)", halign="left", valign="middle", color=TEXT_COLOR)
+        lbl_doctor.bind(size=lbl_doctor.setter('text_size'))
+        self.doctor_row.add_widget(self.chk_doctor)
+        self.doctor_row.add_widget(lbl_doctor)
+
+        # Doctor Path Layout (Shows only when Doctor is checked)
+        self.doctor_layout = BoxLayout(orientation='vertical', size_hint_y=None, height=100, spacing=10)
+        self.btn_set_routing = Button(text="Edit Routing Path", background_normal='', background_color=ACCENT_YELLOW, color=DARK_TEXT, bold=True, size_hint_y=None, height=45)
+        self.btn_set_routing.bind(on_press=self.open_routing_window)
+        self.lbl_routing_summary = Label(text="No path set.", color=TEXT_COLOR, size_hint_y=None, height=35)
+        self.doctor_layout.add_widget(self.btn_set_routing)
+        self.doctor_layout.add_widget(self.lbl_routing_summary)
+
+        # Submit & Output
         self.btn_submit = Button(text="Submit to Database", size_hint_y=None, height=60, background_normal='', background_color=ACCENT_GREEN, color=DARK_TEXT, bold=True, font_size='18sp')
         self.btn_submit.bind(on_press=self.submit_action)
         self.output_label = Label(text="", color=ACCENT_YELLOW, size_hint_y=1, text_size=(None, None), halign='center', valign='middle')
 
-        self.card_controls.add_widget(self.remove_row)
-        self.card_controls.add_widget(self.btn_submit)
-        self.card_controls.add_widget(self.output_label)
-
-        self.update_action_card()
         self.update_layout()
         self.setup_scanner_popup()
         
@@ -142,38 +139,51 @@ class ScannerApp(App):
 
     # --- UI Layout Toggles ---
 
-    def update_action_card(self):
-        """Swaps the inputs in Card 2 between Nurse Scan and Doctor Path based on checkbox."""
-        self.card_action.clear_widgets()
-        self.card_action.add_widget(self.lbl_action)
-        self.card_action.add_widget(self.doctor_row)
-        if self.chk_doctor.active:
-            self.card_action.add_widget(self.doctor_layout)
-        else:
-            self.card_action.add_widget(self.nurse_layout)
-
-    def toggle_doctor_mode(self, instance, value):
-        self.update_action_card()
-        if value:
-            self.open_routing_window(None)
-
     def update_layout(self):
+        """Dynamically redraws the layout based on active checkboxes."""
         self.main_layout.clear_widgets()
-        self.main_layout.add_widget(self.main_layout.children[-1] if self.main_layout.children else Label(text="FindMyPatient ER Triage", font_size='22sp', bold=True, color=ACCENT_YELLOW, size_hint_y=None, height=50))
+        self.main_layout.add_widget(self.header)
         self.main_layout.add_widget(self.card_patient)
-        if not self.remove_checkbox.active:
+        
+        # Show Nurse Card ONLY if neither Remove nor Doctor mode is active
+        if not self.remove_checkbox.active and not self.chk_doctor.active:
             self.main_layout.add_widget(self.card_action)
+            
+        # Rebuild Controls Card dynamically
+        self.card_controls.clear_widgets()
+        self.card_controls.add_widget(self.remove_row)
+        
+        # Only show Doctor option if Remove is not active
+        if not self.remove_checkbox.active:
+            self.card_controls.add_widget(self.doctor_row)
+            if self.chk_doctor.active:
+                self.card_controls.add_widget(self.doctor_layout)
+                
+        self.card_controls.add_widget(self.btn_submit)
+        self.card_controls.add_widget(self.output_label)
+        
         self.main_layout.add_widget(self.card_controls)
 
-    def toggle_remove_mode(self, instance, value):
-        self.update_layout()
+    def toggle_doctor_mode(self, instance, value):
         if value:
+            self.remove_checkbox.active = False # Mutual exclusivity
+            self.btn_submit.text = "Submit Doctor Path"
+            self.btn_submit.background_color = ACCENT_GREEN
+            self.open_routing_window(None)
+        else:
+            self.btn_submit.text = "Submit to Database"
+        self.update_layout()
+
+    def toggle_remove_mode(self, instance, value):
+        if value:
+            self.chk_doctor.active = False # Mutual exclusivity
             self.field2.text = ""
             self.btn_submit.text = "Confirm Discharge"
             self.btn_submit.background_color = (0.9, 0.4, 0.4, 1) 
         else:
             self.btn_submit.text = "Submit to Database"
             self.btn_submit.background_color = ACCENT_GREEN
+        self.update_layout()
 
     # --- Doctor Routing Window Logic ---
 
@@ -206,8 +216,9 @@ class ScannerApp(App):
         if not self.routing_path:
             self.add_routing_step()
         else:
+            # Reconstruct dropdowns from saved tuples
             for step in self.routing_path:
-                self.add_routing_step(room=step['room'], urgency=step['urgency'])
+                self.add_routing_step(room=f"Room {step[0]}", urgency=f"Urgency {step[1]}")
                 
         self.routing_popup.open()
 
@@ -231,10 +242,17 @@ class ScannerApp(App):
         self.routing_path = []
         # Reverse iteration because Kivy add_widget puts the newest element at index 0
         for row in reversed(self.steps_container.children):
-            self.routing_path.append({
-                "room": row.room_spinner.text,
-                "urgency": row.urgency_spinner.text
-            })
+            room_str = row.room_spinner.text
+            urg_str = row.urgency_spinner.text
+            
+            # Extract numbers to create a Tuple of (Room Number, Urgency Number)
+            try:
+                room_num = int(room_str.replace("Room ", ""))
+                urg_num = int(urg_str.replace("Urgency ", ""))
+                self.routing_path.append((room_num, urg_num))
+            except Exception as e:
+                # Fallback to strings if parsing fails
+                self.routing_path.append((room_str, urg_str))
             
         self.routing_popup.dismiss()
         self.lbl_routing_summary.text = f"Path Set: {len(self.routing_path)} Steps Configured."
@@ -324,6 +342,7 @@ class ScannerApp(App):
                     self.output_label.text = "Please configure a routing path."
                     self.output_label.color = (0.9, 0.4, 0.4, 1)
                     return
+                # Sends a list of tuples like: [(1, 2), (4, 1)] -> JSON converts this to [[1, 2], [4, 1]]
                 payload["routingPath"] = self.routing_path
                 payload["isDoctorFlow"] = True
             else:
