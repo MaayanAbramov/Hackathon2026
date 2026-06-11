@@ -11,7 +11,7 @@ RAMBAM_DEPARTMENTS_LIST = [
     "cardiac intensive care unit", "maternity and gynecology", "general surgery a",
     "general surgery b", "pediatric surgery", "plastic surgery",
     "cardiothoracic surgery", "vascular surgery", "oral and maxillofacial surgery",
-    "neurology", "pediatrics a", "pediatrics b", "nephrology", "neurosurgery",
+    "neurology", "pediatrics pip install --upgrade openaia", "pediatrics b", "nephrology", "neurosurgery",
     "dermatology", "ophthalmology", "internal medicine a", "internal medicine b",
     "internal medicine c", "internal medicine d", "internal medicine e",
     "internal medicine f", "psychiatry", "neonatal intensive care unit (nicu)",
@@ -22,5 +22,3 @@ RAMBAM_DEPARTMENTS_LIST = [
 # Database Configurations
 DB_NAME = 'Hackathon'
 COLLECTION_NAME = 'HackathonData'
-
-test ="yipee"
