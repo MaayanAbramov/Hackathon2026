@@ -26,15 +26,21 @@ def handle_ask_assistant():
     try:
         response = None
         if user_request == PRESET_QUERIES.Locate_Patient:
-            response = db.SearchForPatient((int)(user_message))
+            if not data.get("message").isnumeric():
+                return jsonify({"error": "Patient number must be numeric."}), 500
+            response = db.SearchForPatient(int(user_message))
         elif user_request == PRESET_QUERIES.Room_Occupancy:
             response = db.GetRoomPatientsCount(user_message)
         elif user_request == PRESET_QUERIES.Total_Occupancy:
             response = db.GetTotalPatientsCount()
         elif user_request == PRESET_QUERIES.Administration_Time:
-            response = db.GetAdministrationTime((int)(user_message))
+            if not data.get("message").isnumeric():
+                return jsonify({"error": "Patient number must be numeric."}), 500
+            response = db.GetAdministrationTime(int(user_message))
         elif user_request == PRESET_QUERIES.Idle_Time:
-            response = db.GetIdleTime((int)(user_message))
+            if not data.get("message").isnumeric():
+                return jsonify({"error": "Patient number must be numeric."}), 500
+            response = db.GetIdleTime(int(user_message))
         elif user_request == PRESET_QUERIES.Other:
             response = ask_assistant(user_message)
         else:
