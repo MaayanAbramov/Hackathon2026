@@ -229,7 +229,7 @@ def test_room_occupancy_basic(real_test_db):
     assert response.json()["response"] == 0
 
     payload = {
-        "request": PRESET_QUERIES.Room_Occupancy,
+        "request": PRESET_QUERIES.Room_Occupancy.value,
         "message": "plastic surgery aaaaaaaaaaaaa"
     }
 
