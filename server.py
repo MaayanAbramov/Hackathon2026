@@ -12,7 +12,9 @@ db = DB_API()
 def handle_ask_assistant():
     data = request.json
     try:
-        user_request = (int)(data.get("request"))
+        if not data.get("request").isnumeric():
+            return jsonify({"error": "Request must be numeric."}), 500
+        user_request = int(data.get("request"))
         user_message = data.get("message")
     except Exception as e:
         print(f" ERROR in /api/ask: {e}")
