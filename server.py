@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import traceback 
 from llm_agent import ask_assistant
 from src.server.DB_API import DB_API
-from src.server.constants import PRESET_QUERIES
+from src.server.constants import PRESET_QUERIES , RAMBAM_DEPARTMENTS_LIST
 from src.llms.voice_to_text import transcribe
 
 
@@ -27,7 +27,7 @@ def processApiRequest(request, message):
             if not message.isnumeric():
                 return jsonify({"error": "Patient number must be numeric."}), 500
             p_info = db.SearchForPatient(int(user_message))
-            response = p_info.to_dict() if p_info else "Patient not found."
+            response = p_info.location.capitalize() if p_info else "Patient not found."
         elif user_request == PRESET_QUERIES.Room_Occupancy.value:
             response = db.GetRoomPatientsCount(user_message)
         elif user_request == PRESET_QUERIES.Total_Occupancy.value:
