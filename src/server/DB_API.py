@@ -168,5 +168,17 @@ class DB_API:
         except Exception as e:
             print(f"Aggregation query failed: {e}")
             return None
+    def ExecuteDynamicQuery(self, action: str, query_filter: dict):
+        
+        try:
+            if action == "count":
+                return self.collection.count_documents(query_filter)
+            elif action == "find":
+                
+                return list(self.collection.find(query_filter, {"_id": 0}).limit(5))
+            else:
+                return "Unsupported action."
+        except Exception as e:
+            return f"DB Error: {str(e)}"
 if __name__ == "__main__":
     print("hola")
