@@ -163,7 +163,7 @@ class DB_API:
                 raise ValueError("Write operations ($out, $merge) are strictly prohibited in this read-only query.")
                 
         try:
-            cursor = self.collection.aggregate(pipeline)
+            cursor = self.collection.aggregate(pipeline) 
             return list(cursor)
         except Exception as e:
             print(f"Aggregation query failed: {e}")
