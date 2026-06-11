@@ -20,7 +20,7 @@ class ScannerApp(App):
         
         # --- API Configuration ---
         # Change these to match your Flask server's IP and port
-        self.SERVER_IP = "132.68.41.143" 
+        self.SERVER_IP = "132.68.34.90"
         self.SERVER_PORT = "5000"
         
         # Increased padding and spacing for a more spacious layout
