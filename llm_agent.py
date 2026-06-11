@@ -6,7 +6,6 @@ from src.server.DB_API import DB_API
 
 db = DB_API()
 
-tools = []
 llm_json = ChatOllama(model="llama3.1", temperature=0, format="json")
 llm_text = ChatOllama(model="llama3.1", temperature=0)
 
