@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import patch
 from src.server.DB_API import DB_API, PatientInfo
+from src.server.constants import PRESET_QUERIES
+import requests
+
+FLASK_URL = "http://132.68.34.90:5000"
 
 # =====================================================================
 # FIXTURES (Choose which one to use for each test!)
@@ -122,6 +126,7 @@ def test_insert_and_search_patient(real_test_db):
     assert found_patient.location == "urology"
 
 def test_update_patient_location(real_test_db):
+    pass
     db = DB_API()
     
     # Insert first
@@ -133,6 +138,7 @@ def test_update_patient_location(real_test_db):
     assert updated_patient.location == "cardiology"
 
 def test_remove_patient(real_test_db):
+    pass
     db = DB_API()
     
     # Insert first
@@ -145,3 +151,92 @@ def test_remove_patient(real_test_db):
     # Verify they are gone
     should_be_none = db.SearchForPatient(patientNumber=777)
     assert should_be_none is None
+
+    # =====================================================================
+    # 4. FLASK TESTS (Slower - Uses 'real_test_db')
+    # =====================================================================
+
+# def test_find_patient_basic(real_test_db):
+#     db = DB_API()
+    
+#     payload = {
+#         "request": PRESET_QUERIES.Locate_Patient,
+#         "message": 1234
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] is None
+
+#     db.InsertNewPatient(patientNumber=1234, location="plastic surgery")
+    
+#     payload = {
+#         "request": PRESET_QUERIES.Locate_Patient,
+#         "message": 1234
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] is not None
+
+#     payload = {
+#         "request": PRESET_QUERIES.Locate_Patient,
+#         "message": "1234"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] is not None
+
+#     payload = {
+#         "request": PRESET_QUERIES.Locate_Patient,
+#         "message": "1234a"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 500
+
+# def test_room_occupancy_basic(real_test_db):
+#     db = DB_API()
+    
+#     payload = {
+#         "request": PRESET_QUERIES.Room_Occupancy,
+#         "message": "plastic surgery"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] == 0
+
+#     db.InsertNewPatient(patientNumber=1234, location="plastic surgery")
+    
+#     payload = {
+#         "request": PRESET_QUERIES.Room_Occupancy,
+#         "message": "plastic surgery"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] == 1
+
+#     db.RemovePatient(patientNumber=1234)
+    
+#     payload = {
+#         "request": PRESET_QUERIES.Room_Occupancy,
+#         "message": "plastic surgery"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] == 0
+
+#     payload = {
+#         "request": PRESET_QUERIES.Room_Occupancy.value,
+#         "message": "plastic surgery aaaaaaaaaaaaa"
+#     }
+
+#     response = requests.post(FLASK_URL+"/api/ask", json=payload)
+#     assert response.status_code == 200
+#     assert response.json()["response"] == 0
+
+    
