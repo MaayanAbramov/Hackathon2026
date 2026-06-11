@@ -113,45 +113,44 @@ def test_singleton_pattern(mock_db):
 # =====================================================================
 
 def test_insert_and_search_patient(real_test_db):
-    pass 
-    # db = DB_API()
+    db = DB_API()
     
     # Insert a new patient
-    # new_patient = db.InsertNewPatient(patientNumber=999, location="urology")
-    # assert new_patient is not None
-    # assert new_patient.patientNumber == 999
+    new_patient = db.InsertNewPatient(patientNumber=999, location="urology")
+    assert new_patient is not None
+    assert new_patient.patientNumber == 999
     
     # Search for that exact patient
-    # found_patient = db.SearchForPatient(patientNumber=999)
-    # assert found_patient is not None
-    # assert found_patient.location == "urology"
+    found_patient = db.SearchForPatient(patientNumber=999)
+    assert found_patient is not None
+    assert found_patient.location == "urology"
 
 def test_update_patient_location(real_test_db):
     pass
-    # db = DB_API()
+    db = DB_API()
     
     # Insert first
-    # db.InsertNewPatient(patientNumber=888, location="oncology")
+    db.InsertNewPatient(patientNumber=888, location="oncology")
     
     # Update location
-    # updated_patient = db.UpdatePatientLocation(patientNumber=888, new_location="cardiology")
-    # assert updated_patient is not None
-    # assert updated_patient.location == "cardiology"
+    updated_patient = db.UpdatePatientLocation(patientNumber=888, new_location="cardiology")
+    assert updated_patient is not None
+    assert updated_patient.location == "cardiology"
 
 def test_remove_patient(real_test_db):
     pass
-    # db = DB_API()
+    db = DB_API()
     
     # Insert first
-    # db.InsertNewPatient(patientNumber=777, location="neurology")
+    db.InsertNewPatient(patientNumber=777, location="neurology")
     
     # Delete them
-    # success = db.RemovePatient(patientNumber=777)
-    # assert success is True
+    success = db.RemovePatient(patientNumber=777)
+    assert success is True
     
     # Verify they are gone
-    # should_be_none = db.SearchForPatient(patientNumber=777)
-    # assert should_be_none is None
+    should_be_none = db.SearchForPatient(patientNumber=777)
+    assert should_be_none is None
 
     # =====================================================================
     # 4. FLASK TESTS (Slower - Uses 'real_test_db')
