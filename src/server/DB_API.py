@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Import the extracted constants
 from src.server.constants import (
@@ -15,12 +17,15 @@ load_dotenv()  # Load environment variables from .env file
 db_string = os.getenv("DATABASE_URL")
  
 class PatientInfo:
-    def __init__(self, patientNumber, location):
+    def __init__(self, patientNumber, location, location_history=None): #Location_history is al list of tuples
         """Initializes a new PatientInfo instance with a validated patient number and location."""
         if not isinstance(patientNumber, int):
             raise TypeError(f"patientNumber must be an integer, got {type(patientNumber).__name__} instead.")
         self.__patientNumber = patientNumber
         self.location = location
+        self.__location_history = location_history if location_history is not None else []
+        if not self.__location_history:
+            self.location_history_append(location)
     
     @property
     def patientNumber(self):
@@ -31,6 +36,10 @@ class PatientInfo:
     def location(self):
         """Returns the patient's current hospital location."""
         return self.__location
+    @property
+    def location_history(self):
+        """Returns the patient's current history list of (location, time_stamp) tuples"""
+        return self.__location_history
     
     @location.setter
     def location(self, value):
@@ -39,14 +48,34 @@ class PatientInfo:
             raise TypeError(f"Location must be a string, got {type(value).__name__} instead.")
         self.__location = value
 
+    def location_history_append(self, value):
+        if not isinstance(value, str):
+            raise TypeError(f"Location must be a string, got {type(value).__name__} instead.")
+        now = datetime.now(ZoneInfo("Asia/Jerusalem"))
+        self.__location_history.append((value, now))
+
+
     def __str__(self):
         """Returns a human-readable string representation of the patient's info."""
-        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}')"
+        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
     
     def __repr__(self):
         """Returns a formal string representation of the patient's info."""
-        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}')"
+        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
     
+    def to_dict(self):
+        """Converts the object to a JSON-safe dictionary."""
+        formatted_history = []
+        for loc, time_stamp in self.__location_history:
+            
+            time_str = time_stamp.isoformat() if isinstance(time_stamp, datetime) else time_stamp
+            formatted_history.append({"location": loc, "timestamp": time_str})
+            
+        return {
+            "patientNumber": self.__patientNumber,
+            "location": self.location,
+            "location_history": formatted_history
+        }
 class DB_API:
     _instance = None
     
@@ -85,7 +114,8 @@ class DB_API:
             if document:
                 return PatientInfo(
                     patientNumber=document.get("patientNumber"), 
-                    location=document.get("location")
+                    location=document.get("location"),
+                    location_history=document.get("location_history")
                 )
             else:
                 return None
@@ -109,12 +139,17 @@ class DB_API:
         else:
             self.raise_if_illegal(user_data={"patientNumber": patientNumber, "location": new_location})
             try:
-                self.collection.update_one(
-                    {"patientNumber": patientNumber}, 
-                    {"$set": {"location": new_location}}
-                )
+                p_info.location_history_append(new_location)
                 p_info.location = new_location
-                print(f"Successfully updated Patient {patientNumber}'s location to {new_location}")
+                self.collection.update_one(
+                    {"patientNumber": p_info.patientNumber}, 
+                    {"$set": {
+                        "location": p_info.location,
+                        "location_history": p_info.location_history
+                    }}
+                )
+                
+                print(f"Successfully updated Patient {p_info.patientNumber}'s location to {p_info.location}")
                 return p_info
             except Exception as e:
                 print(f"Database update failed: {e}")
@@ -125,8 +160,8 @@ class DB_API:
         existing_patient = self.SearchForPatient(patientNumber=patientNumber)
         if existing_patient is not None:
             raise ValueError(f"Cannot insert: Patient patientNumber {patientNumber} already exists in the database.")
-        
-        user_data = {"patientNumber": patientNumber, "location": location}
+        now = datetime.now(ZoneInfo("Asia/Jerusalem"))
+        user_data = {"patientNumber": patientNumber, "location": location, "location_history": [(location, now)]}
         self.raise_if_illegal(user_data=user_data)
 
         try:
