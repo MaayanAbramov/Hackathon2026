@@ -1,10 +1,12 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.tools import tool
 from src.server.DB_API import DB_API 
 
 db = DB_API()
 
+tools = []
 llm_json = ChatOllama(model="llama3.1", temperature=0, format="json")
 llm_text = ChatOllama(model="llama3.1", temperature=0)
 
