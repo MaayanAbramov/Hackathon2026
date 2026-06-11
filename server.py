@@ -11,8 +11,9 @@ db = DB_API()
 @app.route('/api/ask', methods=['POST'])
 def handle_ask_assistant():
     data = request.json
+    print(data)
     try:
-        if not data.get("request").isnumeric():
+        if not str(data.get("request", "")).isnumeric():
             return jsonify({"error": "Request must be numeric."}), 500
         user_request = int(data.get("request"))
         user_message = data.get("message")
@@ -28,7 +29,8 @@ def handle_ask_assistant():
         if user_request == PRESET_QUERIES.Locate_Patient:
             if not data.get("message").isnumeric():
                 return jsonify({"error": "Patient number must be numeric."}), 500
-            response = db.SearchForPatient(int(user_message))
+            p_info = db.SearchForPatient(int(user_message))
+            response = p_info.to_dict() if p_info else "Patient not found."
         elif user_request == PRESET_QUERIES.Room_Occupancy:
             response = db.GetRoomPatientsCount(user_message)
         elif user_request == PRESET_QUERIES.Total_Occupancy:
