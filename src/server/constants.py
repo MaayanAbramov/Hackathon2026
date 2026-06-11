@@ -21,12 +21,12 @@ RAMBAM_DEPARTMENTS_LIST = [
 ]
 
 class PRESET_QUERIES(Enum):
-    Locate_Patient = 0
-    Room_Occupancy = 1
-    Total_Occupancy = 2
-    Administration_Time = 3
-    Idle_Time = 4
-    Other = 5
+    Locate_Patient = 1
+    Room_Occupancy = 2
+    Total_Occupancy = 3
+    Administration_Time = 4
+    Idle_Time = 5
+    Other = 6
 
 # PRESET_QUERIES = ["Locate Patient", "Room Occupancy", "Total Occupancy", "Administration Time", "Idle Time", "Other"]
 
