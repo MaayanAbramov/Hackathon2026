@@ -55,6 +55,7 @@ class PatientInfo:
         self.__location_history.append((value, now))
 
 
+
     def __str__(self):
         """Returns a human-readable string representation of the patient's info."""
         return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
@@ -63,19 +64,19 @@ class PatientInfo:
         """Returns a formal string representation of the patient's info."""
         return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
     
-    def to_dict(self):
+    def to_dict(self, key_list):
         """Converts the object to a JSON-safe dictionary."""
         formatted_history = []
         for loc, time_stamp in self.__location_history:
-            
             time_str = time_stamp.isoformat() if isinstance(time_stamp, datetime) else time_stamp
             formatted_history.append({"location": loc, "timestamp": time_str})
-            
-        return {
+          
+        dict_ = {
             "patientNumber": self.__patientNumber,
             "location": self.location,
             "location_history": formatted_history
         }
+        return { key:dict_[key] for key in key_list if  key in dict_.keys()}
 class DB_API:
     _instance = None
     
@@ -123,6 +124,7 @@ class DB_API:
         except Exception as e:
             print(f"Database query failed: {e}")
             return None
+        
     def GetTotalPatientsCount(self):
         """ returns the total numbers of patients currently in the database."""
         try:
@@ -206,7 +208,7 @@ class DB_API:
         
     def GetRoomPatientsCount(self, room):
         """ returns the total numbers of patients currently in a given room."""
-        if not room in DB_API.RAMBAM_DEPARTMENTS_LIST:
+        if not room in RAMBAM_DEPARTMENTS_LIST:
             return 0
         else:
             try:
@@ -220,20 +222,26 @@ class DB_API:
         self.raise_if_illegal(user_data={"patientNumber": patientNumber})
 
         try:
-            return self.collection.count_documents({}) #TODO
+            if (l:=self.collection.find_one({"patientNumber:":patientNumber}).get("location_history",[])) :
+                return str(l[0][1])
+            else:
+                 return "Patient Not Found"
         except Exception as e:
             print(f"Database count failed: {e}")
-            return 0
+            return "Error Communicating with Server"
         
     def GetIdleTime(self, patientNumber=None):
-        """ returns the idle time of a patient."""
+        """ returns the time of administration of a patient."""
         self.raise_if_illegal(user_data={"patientNumber": patientNumber})
 
         try:
-            return self.collection.count_documents({}) #TODO
+            if (l:=self.collection.find_one({"patientNumber:":patientNumber}).get("location_history",[])) :
+                 return str(l[-1][1])
+            else:
+                return "Patient Not Found" 
         except Exception as e:
             print(f"Database count failed: {e}")
-            return 0
+            return "Error Communicating with Server"
         
 if __name__ == "__main__":
     print("hola")
