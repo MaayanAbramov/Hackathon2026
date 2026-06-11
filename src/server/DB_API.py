@@ -93,6 +93,13 @@ class DB_API:
         except Exception as e:
             print(f"Database query failed: {e}")
             return None
+    def GetTotalPatientsCount(self):
+        """ returns the total numbers of patients currently in the database."""
+        try:
+            return self.collection.count_documents({})
+        except Exception as e:
+            print(f"Database count failed: {e}")
+            return 0
 
     def UpdatePatientLocation(self, patientNumber = None, new_location = None):
         """Updates an existing patient's location in the database and returns the updated object."""
@@ -161,5 +168,37 @@ class DB_API:
         except Exception as e:
             print(f"Aggregation query failed: {e}")
             return None
+        
+    def GetRoomPatientsCount(self, room):
+        """ returns the total numbers of patients currently in a given room."""
+        if not room in DB_API.RAMBAM_DEPARTMENTS_LIST:
+            return 0
+        else:
+            try:
+                return self.collection.count_documents({"location":room}) 
+            except Exception as e:
+                print(f"Database count failed: {e}")
+                return 0
+        
+    def GetAdministrationTime(self, patientNumber=None):
+        """ returns the time of administration of a patient."""
+        self.raise_if_illegal(user_data={"patientNumber": patientNumber})
+
+        try:
+            return self.collection.count_documents({}) #TODO
+        except Exception as e:
+            print(f"Database count failed: {e}")
+            return 0
+        
+    def GetIdleTime(self, patientNumber=None):
+        """ returns the idle time of a patient."""
+        self.raise_if_illegal(user_data={"patientNumber": patientNumber})
+
+        try:
+            return self.collection.count_documents({}) #TODO
+        except Exception as e:
+            print(f"Database count failed: {e}")
+            return 0
+        
 if __name__ == "__main__":
     print("hola")
