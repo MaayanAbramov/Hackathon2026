@@ -201,4 +201,5 @@ class DB_API:
             return 0
         
 if __name__ == "__main__":
-    print("hola")
+    y= PatientInfo(patientNumber=1,location="urology")
+    print(y)
