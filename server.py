@@ -116,33 +116,60 @@ def handle_ask_assistant():
     #     print(f" ERROR in /api/ask: {e}")
     #     traceback.print_exc()
     #     return jsonify({"error": str(e)}), 500
-    
 @app.route('/api/update_location', methods=['POST'])
 def handle_update_location():
     data = request.json
     patient_num = data.get("patientNumber")
-    new_location = data.get("roombarcode")
+    is_doctor_flow = data.get("isDoctorFlow", False)
 
-    if not patient_num or not new_location:
-        return jsonify({"error":"Missing patientNumber or roombarcode"}), 400
+    if not patient_num:
+        return jsonify({"error": "Missing patientNumber"}), 400
     
     try: 
         p_num_int = int(patient_num)  
-        if db.SearchForPatient(p_num_int):
-            db.UpdatePatientLocation(p_num_int, new_location)
-        else: 
-            db.InsertNewPatient(p_num_int, new_location) 
-        return jsonify({"status": "success", "message": f"Patient {patient_num} moved to {new_location}"}), 200
         
+        # -----------------------------
+        # DOCTOR FLOW: Handle Routing
+        # -----------------------------
+        if is_doctor_flow:
+            routing_path = data.get("routingPath")
+            
+            if not routing_path:
+                return jsonify({"error": "Missing routingPath for doctor flow"}), 400
+            
+            # Ensure the patient exists in the DB before adding a routing path
+            if not db.SearchForPatient(p_num_int):
+                db.InsertNewPatient(p_num_int, "Triage") # Or whatever default location makes sense
+                
+            # NOTE: You will need to implement this method in your DB_API class.
+            # routing_path will be parsed as a list of lists: [[room_int, urgency_int], ...]
+            db.UpdatePatientRouting(p_num_int, routing_path)
+            
+            return jsonify({"status": "success", "message": f"Patient {patient_num} routing path updated."}), 200
+
+        # -----------------------------
+        # NURSE FLOW: Handle Room Scan
+        # -----------------------------
+        else:
+            new_location = data.get("roombarcode")
+            
+            if not new_location:
+                return jsonify({"error": "Missing roombarcode"}), 400
+
+            if db.SearchForPatient(p_num_int):
+                db.UpdatePatientLocation(p_num_int, new_location)
+            else: 
+                db.InsertNewPatient(p_num_int, new_location) 
+                
+            return jsonify({"status": "success", "message": f"Patient {patient_num} moved to {new_location}"}), 200
+            
     except Exception as e:
-     
         print(f"\n CRASH in /api/update_location:")
         print(f"Message: {e}")
         traceback.print_exc() 
         print("-" * 40 + "\n")
         
         return jsonify({"error": str(e)}), 500
-
 @app.route('/api/remove_patient', methods=['POST'])
 def handle_remove_patient():
     data = request.json

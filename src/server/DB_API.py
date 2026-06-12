@@ -17,13 +17,15 @@ load_dotenv()  # Load environment variables from .env file
 db_string = os.getenv("DATABASE_URL")
  
 class PatientInfo:
-    def __init__(self, patientNumber, location, location_history=None): #Location_history is al list of tuples
-        """Initializes a new PatientInfo instance with a validated patient number and location."""
+    def __init__(self, patientNumber, location, location_history=None, routing_path=None): 
+        """Initializes a new PatientInfo instance with a validated patient number, location, and routing path."""
         if not isinstance(patientNumber, int):
             raise TypeError(f"patientNumber must be an integer, got {type(patientNumber).__name__} instead.")
         self.__patientNumber = patientNumber
         self.location = location
         self.__location_history = location_history if location_history is not None else []
+        self.__routing_path = routing_path if routing_path is not None else []
+        
         if not self.__location_history:
             self.location_history_append(location)
     
@@ -36,10 +38,16 @@ class PatientInfo:
     def location(self):
         """Returns the patient's current hospital location."""
         return self.__location
+        
     @property
     def location_history(self):
         """Returns the patient's current history list of (location, time_stamp) tuples"""
         return self.__location_history
+        
+    @property
+    def routing_path(self):
+        """Returns the doctor's assigned routing path list of lists/tuples: [[room, urgency], ...]"""
+        return self.__routing_path
     
     @location.setter
     def location(self, value):
@@ -48,21 +56,26 @@ class PatientInfo:
             raise TypeError(f"Location must be a string, got {type(value).__name__} instead.")
         self.__location = value
 
+    @routing_path.setter
+    def routing_path(self, value):
+        """Updates the patient's routing path after verifying the input is a list."""
+        if not isinstance(value, list):
+            raise TypeError(f"Routing path must be a list, got {type(value).__name__} instead.")
+        self.__routing_path = value
+
     def location_history_append(self, value):
         if not isinstance(value, str):
             raise TypeError(f"Location must be a string, got {type(value).__name__} instead.")
         now = datetime.now(ZoneInfo("Asia/Jerusalem"))
         self.__location_history.append((value, now))
 
-
-
     def __str__(self):
         """Returns a human-readable string representation of the patient's info."""
-        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
+        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history='{self.location_history}', routing_path='{self.routing_path}')"
     
     def __repr__(self):
         """Returns a formal string representation of the patient's info."""
-        return f"PatientInfo(patientNumber={self.__patientNumber}, location='{self.__location}', location_history = '{self.location_history})"
+        return self.__str__()
     
     def to_dict(self, key_list):
         """Converts the object to a JSON-safe dictionary."""
@@ -74,9 +87,12 @@ class PatientInfo:
         dict_ = {
             "patientNumber": self.__patientNumber,
             "location": self.location,
-            "location_history": formatted_history
+            "location_history": formatted_history,
+            "routing_path": self.__routing_path
         }
-        return { key:dict_[key] for key in key_list if  key in dict_.keys()}
+        return { key:dict_[key] for key in key_list if key in dict_.keys()}
+
+
 class DB_API:
     _instance = None
     
@@ -116,7 +132,8 @@ class DB_API:
                 return PatientInfo(
                     patientNumber=document.get("patientNumber"), 
                     location=document.get("location"),
-                    location_history=document.get("location_history")
+                    location_history=document.get("location_history"),
+                    routing_path=document.get("routing_path", []) # Fetch routing path if it exists
                 )
             else:
                 return None
@@ -157,13 +174,41 @@ class DB_API:
                 print(f"Database update failed: {e}")
                 return None
 
+    def UpdatePatientRouting(self, patientNumber=None, routing_path=None):
+        """Saves the doctor's assigned routing path for a patient."""
+        p_info = self.SearchForPatient(patientNumber=patientNumber)
+        if p_info is None:
+            raise LookupError(f"An error occurred, Patient patientNumber = {patientNumber} was not found in database records.")
+        
+        if not isinstance(routing_path, list):
+            raise TypeError(f"routing_path must be a list, got {type(routing_path).__name__} instead.")
+
+        try:
+            p_info.routing_path = routing_path
+            self.collection.update_one(
+                {"patientNumber": p_info.patientNumber}, 
+                {"$set": {
+                    "routing_path": p_info.routing_path
+                }}
+            )
+            print(f"Successfully updated Patient {p_info.patientNumber}'s routing path to {routing_path}")
+            return p_info
+        except Exception as e:
+            print(f"Database routing update failed: {e}")
+            return None
+
     def InsertNewPatient(self, patientNumber=None, location=None):
         """Validates and inserts a completely new patient record into the database."""
         existing_patient = self.SearchForPatient(patientNumber=patientNumber)
         if existing_patient is not None:
             raise ValueError(f"Cannot insert: Patient patientNumber {patientNumber} already exists in the database.")
         now = datetime.now(ZoneInfo("Asia/Jerusalem"))
-        user_data = {"patientNumber": patientNumber, "location": location, "location_history": [(location, now)]}
+        user_data = {
+            "patientNumber": patientNumber, 
+            "location": location, 
+            "location_history": [(location, now)],
+            "routing_path": []
+        }
         self.raise_if_illegal(user_data=user_data)
 
         try:
@@ -200,7 +245,7 @@ class DB_API:
                 raise ValueError("Write operations ($out, $merge) are strictly prohibited in this read-only query.")
                 
         try:
-            cursor = self.collection.aggregate(pipeline)
+            cursor = self.collection.aggregate(pipeline) 
             return list(cursor)
         except Exception as e:
             print(f"Aggregation query failed: {e}")
@@ -244,4 +289,5 @@ class DB_API:
             return "Error Communicating with Server"
         
 if __name__ == "__main__":
-    print("hola")
+    y= PatientInfo(patientNumber=1,location="urology")
+    print(y)

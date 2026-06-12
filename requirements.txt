@@ -30,3 +30,4 @@ faster-whisper
 langchain-core
 langchain-ollama
 requests
+

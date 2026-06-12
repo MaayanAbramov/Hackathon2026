@@ -1,9 +1,9 @@
 # constants.py
 from enum import Enum
 
-PERMITTED_FIELDS = ["patientNumber", "location", "location_history"]
+PERMITTED_FIELDS = ["patientNumber", "location", "location_history", "routing_path"]
 
-FIELD_TO_PERMITTED_TYPE = {"patientNumber": int, "location": str, "location_history": list}
+FIELD_TO_PERMITTED_TYPE = {"patientNumber": int, "location": str, "location_history": list , "routing_path": list}
 
 RAMBAM_DEPARTMENTS_LIST = [
     "oncology", "urology", "orthopedics", "pediatric orthopedics",
