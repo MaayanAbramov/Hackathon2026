@@ -13,15 +13,9 @@ def ask_assistant(user_message: str) -> str:
     # text to mongo
     query_prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a MongoDB expert. Translate the user's natural language request into a MongoDB query. "
-                   f"The database collection has patients with the fields: {db.PERMITTED_FIELDS}. \n"
+                   "The database collection has patients with the fields: ['patientNumber', 'location', 'administrationTime', 'routingPath']. \n"
                    "You MUST not edit or change the database."
                    "Output ONLY a valid list of MongoDB aggregation queries to fufill the request.\n"
-                #    "1. 'action': strictly use 'find' to search for records, or 'count' to get a total number.\n"
-                #    "2. 'filter': a valid MongoDB query dictionary.\n"
-                #    "Examples:\n"
-                #    "- For 'where is patient 123?': {{\"action\": \"find\", \"filter\": {{\"patientNumber\": 123}}}}\n"
-                #    "- For 'how many patients are there?': {{\"action\": \"count\", \"filter\": {{}}}}\n"
-                #    "- For 'find all patients in the ER': {{\"action\": \"find\", \"filter\": {{\"location\": \"ER\"}}}}"
                 ),
         ("human", "{text}")
     ])

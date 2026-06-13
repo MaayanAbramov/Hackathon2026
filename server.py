@@ -58,17 +58,19 @@ def handle_ask_assistant_voice():
     with open("received.ogg", "wb") as f:
         f.write(audio_bytes)
     
-    with open("received.ogg", "r") as f:
+    # FIX: Changed "r" to "rb" here so it can read the binary header
+    with open("received.ogg", "rb") as f:
         header = f.read(4)
         f.seek(0)
 
         if header != b"OggS":
             return {"error": "Invalid OGG file"}, 400
 
+    # No language parameter needed here anymore, we hardcoded it in the pipeline
+    stt = transcribe("received.ogg")
 
-    stt = transcribe("received.ogg", language="he")
-
-    return processApiRequest(stt['text'], PRESET_QUERIES.Other)
+    # Access the text from the returned dictionary and ensure PRESET_QUERIES uses .value
+    return processApiRequest(PRESET_QUERIES.Other.value, stt['text'])
 
     
 @app.route('/api/ask', methods=['POST'])
@@ -198,4 +200,4 @@ def handle_remove_patient():
     
 if __name__ == '__main__':
     print(" Starting Flask API Server on port 5000...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
