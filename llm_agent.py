@@ -1,16 +1,17 @@
+import asyncio
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
-from src.server.DB_API import DB_API 
-import ast
 
-db = DB_API()
+# Import the MCP Client tools
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 llm_json = ChatOllama(model="llama3.1", temperature=0, format="json")
 llm_text = ChatOllama(model="llama3.1", temperature=0)
 
-def ask_assistant(user_message: str) -> str:
-    # text to mongo
+async def run_mcp_agent(user_message: str) -> str:
+    # 1. Generate the Mongo Query 
     query_prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a MongoDB expert. Translate the user's natural language request into a MongoDB query. "
                    "The database collection has patients with the fields: ['patientNumber', 'location', 'administrationTime', 'routingPath']. \n"
@@ -23,42 +24,52 @@ def ask_assistant(user_message: str) -> str:
     query_chain = query_prompt | llm_json | JsonOutputParser()
     
     try:
-        # text to query
         mongo_query = query_chain.invoke({"text": user_message})
-        print(f"[*] Step 1 - Dynamic Mongo Query: {mongo_query}")
-        
-        # action = mongo_query.get("action")
-        # query_filter = mongo_query.get("filter", {})
-        
-        
-        # if not action:
-        #     return "Could not generate a valid database action."
-        literal_mongo_query = ast.literal_eval(mongo_query)
-        db_result = db.CustomAggregationQuery(literal_mongo_query)
-        
-        # TODO CHECK IF SUCCESSFUL, return an apologetic "sorry i couldnt get/understand/whatever"
+        print(f"[*] Step 1 - Dynamic Mongo Query Generated: {mongo_query}")
 
-        raw_db_result = f"DB_RESULT: User request - \"{user_message}\" was turned into the query - \"{mongo_query}\" which returned: {db_result}"
-        print(f"[*] Step 2 - Raw DB Result: {raw_db_result}")
+        # 2. Define the connection to your separate MCP Server
+        server_params = StdioServerParameters(
+            command="python",
+            args=["mcp_server.py"]
+        )
+        
+        # 3. Connect to the MCP server and call the tool
+        async with stdio_client(server_params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                
+                # Execute the tool safely ON THE SERVER
+                tool_result = await session.call_tool(
+                    name="execute_mongo_query",
+                    arguments={"query": mongo_query}
+                )
+                
+                db_result = tool_result.content[0].text
+                raw_db_result = f"DB_RESULT: User request - \"{user_message}\" returned: {db_result}"
+                print(f"[*] Step 2 - MCP Server Result: {raw_db_result}")
 
-     
-        humanize_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are the FindMyPatient friendly assistant. "
-                       "Take the raw database result provided and turn it into a helpful, natural, and polite sentence in English. "
-                       "Do not add information that is not in the raw data."),
-            ("human", "{raw_data}")
-        ])
-        
-        humanize_chain = humanize_prompt | llm_text
-        final_response = humanize_chain.invoke({"raw_data": raw_db_result})
-        
-        return final_response.content
+                # 4. Humanize the final response
+                humanize_prompt = ChatPromptTemplate.from_messages([
+                    ("system", "You are the FindMyPatient friendly assistant. "
+                               "Take the raw database result provided and turn it into a helpful, natural, and polite sentence in English. "
+                               "Do not add information that is not in the raw data."),
+                    ("human", "{raw_data}")
+                ])
+                
+                humanize_chain = humanize_prompt | llm_text
+                final_response = humanize_chain.invoke({"raw_data": raw_db_result})
+                
+                return final_response.content
 
     except Exception as e:
         return f"System processing error: {str(e)}"
 
+# Synchronous wrapper so Flask can call this without changing server.py
+def ask_assistant(user_message: str) -> str:
+    return asyncio.run(run_mcp_agent(user_message))
+
 if __name__ == "__main__":
-    print(" FindMyPatient Dynamic Pipeline is starting up...")
+    print(" FindMyPatient MCP Pipeline is starting up...")
     
     test_questions = [
         "How many patients are registered in the system?",          
